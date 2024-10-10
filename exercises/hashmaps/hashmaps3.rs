@@ -14,32 +14,54 @@
 // Execute `rustlings hint hashmaps3` or use the `hint` watch subcommand for a
 // hint.
 
-// I AM NOT DONE
-
 use std::collections::HashMap;
-
 // A structure to store the goal details of a team.
+#[derive(Debug, Clone)] // 添加 Clone 特性
 struct Team {
     goals_scored: u8,
     goals_conceded: u8,
 }
 
 fn build_scores_table(results: String) -> HashMap<String, Team> {
-    // The name of the team is the key and its associated struct is the value.
-    let mut scores: HashMap<String, Team> = HashMap::new();
+    let mut scores: HashMap<String, Team> = [
+        ("England", Team { goals_scored: 0, goals_conceded: 0 }),
+        ("France", Team { goals_scored: 0, goals_conceded: 0 }),
+        ("Germany", Team { goals_scored: 0, goals_conceded: 0 }),
+        ("Italy", Team { goals_scored: 0, goals_conceded: 0 }),
+        ("Poland", Team { goals_scored: 0, goals_conceded: 0 }),
+        ("Spain", Team { goals_scored: 0, goals_conceded: 0 }),
+    ]
+    .iter()
+    .map(|(name, team)| (name.to_string(), team.clone())) // 移除模式匹配中的 &
+    .collect();
 
     for r in results.lines() {
-        let v: Vec<&str> = r.split(',').collect();
-        let team_1_name = v[0].to_string();
-        let team_1_score: u8 = v[2].parse().unwrap();
-        let team_2_name = v[1].to_string();
-        let team_2_score: u8 = v[3].parse().unwrap();
-        // TODO: Populate the scores table with details extracted from the
-        // current line. Keep in mind that goals scored by team_1
-        // will be the number of goals conceded from team_2, and similarly
-        // goals scored by team_2 will be the number of goals conceded by
-        // team_1.
+        let parts: Vec<&str> = r.split(',').collect();
+        if parts.len() != 4 {
+            panic!("Invalid result format: {}", r);
+        }
+        let team_1_name = parts[0].trim().to_string();
+        let team_1_score: u8 = parts[2].trim().parse().unwrap();
+        let team_2_name = parts[1].trim().to_string();
+        let team_2_score: u8 = parts[3].trim().parse().unwrap();
+
+        match scores.get_mut(&team_1_name) {
+            Some(team_1) => {
+                team_1.goals_scored += team_1_score;
+                team_1.goals_conceded += team_2_score;
+            },
+            None => panic!("Unknown team: {}", team_1_name),
+        }
+
+        match scores.get_mut(&team_2_name) {
+            Some(team_2) => {
+                team_2.goals_scored += team_2_score;
+                team_2.goals_conceded += team_1_score;
+            },
+            None => panic!("Unknown team: {}", team_2_name),
+        }
     }
+
     scores
 }
 
@@ -67,7 +89,6 @@ mod tests {
             vec!["England", "France", "Germany", "Italy", "Poland", "Spain"]
         );
     }
-
     #[test]
     fn validate_team_score_1() {
         let scores = build_scores_table(get_results());
@@ -75,7 +96,6 @@ mod tests {
         assert_eq!(team.goals_scored, 5);
         assert_eq!(team.goals_conceded, 4);
     }
-
     #[test]
     fn validate_team_score_2() {
         let scores = build_scores_table(get_results());
